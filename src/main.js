@@ -198,15 +198,17 @@ textAngular.directive("textAngular", [
                 };
 
                 // define the popover show and hide functions
-                scope.showPopover = function(_el){
+                scope.showPopover = function(_el, showResizeOverlay){
                     scope.getScrollTop(scope.displayElements.scrollWindow[0], true);
                     scope.displayElements.popover.css('display', 'block');
                     // we must use a $timeout here, or the css change to the
                     // displayElements.resize.overlay will not take!!!
                     // WHY???
-                    $timeout(function() {
-                        scope.displayElements.resize.overlay.css('display', 'block');
-                    });
+                    if (showResizeOverlay) {
+                        $timeout(function () {
+                            scope.displayElements.resize.overlay.css('display', 'block');
+                        });
+                    }
                     scope.resizeElement = _el;
                     scope.reflowPopover(_el);
                     $animate.addClass(scope.displayElements.popover, 'in');
