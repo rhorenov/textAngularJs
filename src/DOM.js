@@ -963,6 +963,9 @@ function($document, taDOM, $log){
                         _cnode.innerHTML.trim() === '') { // empty p element
                         continue;
                     }
+                    if (_cnode.nodeName === '#comment') { // comment element
+                        continue;
+                    }
                     /****************
                      *  allow any text to be inserted...
                     if((   _cnode.nodeType === 3 &&

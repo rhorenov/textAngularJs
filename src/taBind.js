@@ -526,7 +526,7 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                     // all the code specific to contenteditable divs
                     var _processingPaste = false;
                     /* istanbul ignore next: phantom js cannot test this for some reason */
-                    var processpaste = function(text) {
+                    var processpaste = function(text, isPastedContentPlainText) {
                        var _isOneNote = text!==undefined? text.match(/content=["']*OneNote.File/i): false;
                         /* istanbul ignore else: don't care if nothing pasted */
                         //console.log(text);
@@ -646,6 +646,12 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                                 // LF characters instead of spaces in some spots and they are replaced by '/n', so we need to just swap them to spaces
                                 text = text.replace(/\n/g, ' ');
                             }else{
+                                var textFragment = text.match(/<!--StartFragment-->([\s\S]*?)<!--EndFragment-->/i);
+                                if(textFragment) {
+                                    text = textFragment[1];
+                                }
+
+
                                 // remove unnecessary chrome insert
                                 text = text.replace(/<(|\/)meta[^>]*?>/ig, '');
                                 if(text.match(/<[^>]*?(ta-bind)[^>]*?>/)){
@@ -680,13 +686,15 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             }
 
                             // parse whitespace from plaintext input, starting with preceding spaces that get stripped on paste
-                            text = text.replace(/^[ |\u00A0]+/gm, function (match) {
-                                var result = '';
-                                for (var i = 0; i < match.length; i++) {
-                                    result += '&nbsp;';
-                                }
-                                return result;
-                            }).replace(/\n|\r\n|\r/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+                            if(isPastedContentPlainText) {
+                                text = text.replace(/^[ |\u00A0]+/gm, function (match) {
+                                    var result = '';
+                                    for (var i = 0; i < match.length; i++) {
+                                        result += '&nbsp;';
+                                    }
+                                    return result;
+                                }).replace(/\n|\r\n|\r/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+                            }
 
                             if(_pasteHandler) text = _pasteHandler(scope, {$html: text}) || text;
 
@@ -695,6 +703,8 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
 
                             text = taSanitize(text, '', _disableSanitizer);
                             //console.log('DONE\n', text);
+
+                            text = filterHtmlForPaste(text);
 
                             taSelection.insertHtml(text, element[0]);
                             $timeout(function(){
@@ -707,6 +717,90 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             element.removeClass('processing-paste');
                         }
                     };
+
+                    function removeAllAttributes(element) {
+                        if (element.attributes) {
+                            for (var i = element.attributes.length - 1; i >= 0; i--) {
+                                element.removeAttribute(element.attributes[i].name);
+                            }
+                        }
+                    }
+
+                    function unwrapElement(node) {
+                        node = angular.element(node);
+                        for(var _n = node[0].childNodes.length - 1; _n >= 0; _n--) node.after(node[0].childNodes[_n]);
+                        node.remove();
+                    }
+
+                    function filterHtmlForPaste(text) {
+                        var element = angular.element("<div>" + text + "</div>");
+                        // var children = element[0].childNodes;
+
+                        function unwrapSingleUnwantedElement(elements) {
+                            // This method unwraps one unwanted element and returns true if any element was unwrapped.
+                            // It is a bit of a cheating, but its the most obvious way to implement.
+                            // I did not feel it was a good idea to modify the DOM while iterating through it.
+                            if (elements.length > 0) {
+                                for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
+                                    var el = elements[elementIdx];
+                                    console.log("nodeName:", el.nodeName, "elementIdx:", elementIdx);
+                                    if (el.nodeName.toLowerCase() === 'span') { // <span> element
+                                        // get the element's parent node
+                                        var parent = el.parentNode;
+                                        // move all children out of the element
+                                        while (el.firstChild) {
+                                            parent.insertBefore(el.firstChild, el);
+                                        }
+                                        // remove the empty element
+                                        parent.removeChild(el);
+                                        // Return true to signalise unwrapped
+                                        return true;
+                                    }
+
+                                    // Go to children
+                                    if (unwrapSingleUnwantedElement(el.childNodes)) {
+                                        // Unwrapped
+                                        return true;
+                                    }
+                                }
+                            }
+                            return false;
+                        }
+
+                        function logNodes(elements, indent) {
+                            if (elements.length > 0) {
+                                for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
+                                    var el = elements[elementIdx];
+                                    console.log(indent, "nodeName:", el.nodeName, "[", elementIdx, "]");
+
+                                    logNodes(el.childNodes, indent + "    ");
+                                }
+                            }
+                        }
+
+                        function cleanHtmlDeep(elements) {
+                            if (elements.length > 0) {
+                                for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
+                                    var el = elements[elementIdx];
+                                    removeAllAttributes(el);
+                                    cleanHtmlDeep(el.childNodes);
+                                }
+                            }
+                        }
+
+                        // Remove/Unwrap elements we do not want
+                        // logNodes(element, "");
+                        while(unwrapSingleUnwantedElement(element)) {
+                            console.log('unwrapSingleUnwantedElement returned true');
+                            // logNodes(element, "")
+                        }
+
+                        cleanHtmlDeep(element);
+
+                        text = element[0].innerHTML;
+
+                        return text;
+                    }
 
                     element.on('paste', scope.events.paste = function(e, eventData){
                         /* istanbul ignore else: this is for catching the jqLite testing*/
@@ -725,7 +819,7 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                         /* istanbul ignore next: Handle legacy IE paste */
                         if ( !clipboardData && window.clipboardData && window.clipboardData.getData ){
                             pastedContent = window.clipboardData.getData("Text");
-                            processpaste(pastedContent);
+                            processpaste(pastedContent, true);  // Plain text
                             e.stopPropagation();
                             e.preventDefault();
                             return false;
@@ -735,13 +829,15 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             for(var _t = 0; _t < clipboardData.types.length; _t++){
                                 _types += " " + clipboardData.types[_t];
                             }
+                            var isPastedContentPlainText = false;
                             /* istanbul ignore next: browser tests */
                             if (/text\/html/i.test(_types)) {
                                 pastedContent = clipboardData.getData('text/html');
                             } else if (/text\/plain/i.test(_types)) {
                                 pastedContent = clipboardData.getData('text/plain');
+                                isPastedContentPlainText = true;
                             }
-                            processpaste(pastedContent);
+                            processpaste(pastedContent, isPastedContentPlainText);
                             e.stopPropagation();
                             e.preventDefault();
                             return false;
@@ -753,7 +849,7 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             $timeout(function(){
                                 // restore selection
                                 rangy.restoreSelection(_savedSelection);
-                                processpaste(_tempDiv[0].innerHTML);
+                                processpaste(_tempDiv[0].innerHTML, false); // HTML
                                 element[0].focus();
                                 _tempDiv.remove();
                             }, 0);
