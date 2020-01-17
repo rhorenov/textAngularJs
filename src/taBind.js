@@ -718,10 +718,21 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                         }
                     };
 
-                    function removeAllAttributes(element) {
+                    var allowedAttributesForElements = {
+                        "img": ["src", "alt", "style"],
+                        "a": ["href", "target"]
+                    };
+
+                    function removeUnwantedAllAttributes(element) {
                         if (element.attributes) {
+                            var elementName = element.nodeName.toLowerCase();
+                            var allowedAttributes = allowedAttributesForElements[elementName];
                             for (var i = element.attributes.length - 1; i >= 0; i--) {
-                                element.removeAttribute(element.attributes[i].name);
+                                var attribute = element.attributes[i];
+                                if (!allowedAttributes || !allowedAttributes.indexOf(attribute)) {
+                                    // Remove if not allowed
+                                    element.removeAttribute(attribute.name);
+                                }
                             }
                         }
                     }
@@ -782,7 +793,7 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             if (elements.length > 0) {
                                 for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
                                     var el = elements[elementIdx];
-                                    removeAllAttributes(el);
+                                    removeUnwantedAllAttributes(el);
                                     cleanHtmlDeep(el.childNodes);
                                 }
                             }

@@ -556,15 +556,15 @@ angular.module('textAngularSetup', [])
             buttonGroup.append(reLinkButton);
 */
             var reLinkButton = setupToolElement('insertLink', editorScope);
-            reLinkButton.on('click', function(event){
-                event.preventDefault();
-                var urlLink = $window.prompt(taTranslations.insertLink.dialogPrompt, $element.attr('href'));
-                if(urlLink && urlLink !== '' && urlLink !== 'http://'){
-                    $element.attr('href', urlLink);
-                    editorScope.updateTaBindtaTextElement();
-                }
-                editorScope.hidePopover();
-            });
+            // reLinkButton.on('click', function(event){
+            //     event.preventDefault();
+            //     var urlLink = $window.prompt(taTranslations.insertLink.dialogPrompt, $element.attr('href'));
+            //     if(urlLink && urlLink !== '' && urlLink !== 'http://'){
+            //         $element.attr('href', urlLink);
+            //         editorScope.updateTaBindtaTextElement();
+            //     }
+            //     editorScope.hidePopover();
+            // });
             buttonGroup.append(reLinkButton);
 
             // var unLinkButton = angular.element('<button type="button" class="btn btn-default btn-sm btn-small" tabindex="-1" unselectable="on" title="' + taTranslations.editLink.unLinkButton.tooltip + '"><i class="fa fa-unlink icon-unlink"></i></button>');
