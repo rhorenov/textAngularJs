@@ -562,6 +562,26 @@ angular.module('textAngular.DOM', ['textAngular.factories'])
                     rangy.getSelection().getRangeAt(0).surroundContents(node);
                 }
                 return;
+            }else if(command.toLowerCase() === 'removelink'){
+                if (tagName !== 'a') {
+                    // not a link, ignore it
+                    return;
+                }
+                // taSelection.getSelectionElement()  = taSelection.getSelectionElement().textContent;
+                var selectedElement = taSelection.getSelectionElement();
+                selectedElement.replaceWith(selectedElement.textContent);
+/*
+                _selection = taSelection.getSelection();
+                if(_selection.collapsed){
+                    //console.log('collapsed');
+                    // insert text at selection, then select then just let normal exec-command run
+                    taSelection.insertHtml(tag, topNode);
+                }else if(rangy.getSelection().getRangeAt(0).canSurroundContents()){
+                    var node = angular.element(tagBegin + tagEnd)[0];
+                    rangy.getSelection().getRangeAt(0).surroundContents(node);
+                }
+*/
+                return;
             }else if(command.toLowerCase() === 'inserthtml'){
                 //console.log('inserthtml');
                 taSelection.insertHtml(options, topNode);
@@ -941,6 +961,9 @@ function($document, taDOM, $log){
                     var _cnode = children[_childI];
                     if (_cnode.nodeName.toLowerCase() === 'p' &&
                         _cnode.innerHTML.trim() === '') { // empty p element
+                        continue;
+                    }
+                    if (_cnode.nodeName === '#comment') { // comment element
                         continue;
                     }
                     /****************
