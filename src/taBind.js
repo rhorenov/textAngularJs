@@ -754,7 +754,6 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             if (elements.length > 0) {
                                 for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
                                     var el = elements[elementIdx];
-                                    console.log("nodeName:", el.nodeName, "elementIdx:", elementIdx);
                                     if (el.nodeName.toLowerCase() === 'span') { // <span> element
                                         // get the element's parent node
                                         var parent = el.parentNode;
@@ -778,17 +777,6 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                             return false;
                         }
 
-                        function logNodes(elements, indent) {
-                            if (elements.length > 0) {
-                                for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
-                                    var el = elements[elementIdx];
-                                    console.log(indent, "nodeName:", el.nodeName, "[", elementIdx, "]");
-
-                                    logNodes(el.childNodes, indent + "    ");
-                                }
-                            }
-                        }
-
                         function cleanHtmlDeep(elements) {
                             if (elements.length > 0) {
                                 for (var elementIdx = 0; elementIdx < elements.length; ++elementIdx) {
@@ -800,10 +788,7 @@ angular.module('textAngular.taBind', ['textAngular.factories', 'textAngular.DOM'
                         }
 
                         // Remove/Unwrap elements we do not want
-                        // logNodes(element, "");
                         while(unwrapSingleUnwantedElement(element)) {
-                            console.log('unwrapSingleUnwantedElement returned true');
-                            // logNodes(element, "")
                         }
 
                         cleanHtmlDeep(element);
